@@ -223,6 +223,7 @@ pub(super) fn start_mcp_server(
     service_config.sse_keep_alive = None;
     service_config.sse_retry = None;
     service_config.cancellation_token = CancellationToken::new();
+    let service_config = service_config.disable_allowed_hosts();
 
     let service = StreamableHttpService::new(
         {
@@ -295,12 +296,14 @@ fn start_mcp_server_with_listener(
             move || Ok(handler.clone())
         },
         Arc::new(LocalSessionManager::default()),
-        StreamableHttpServerConfig {
-            stateful_mode: true,
-            json_response: false,
-            sse_keep_alive: None,
-            sse_retry: None,
-            cancellation_token: CancellationToken::new(),
+        {
+            let mut config = StreamableHttpServerConfig::default();
+            config.stateful_mode = true;
+            config.json_response = false;
+            config.sse_keep_alive = None;
+            config.sse_retry = None;
+            config.cancellation_token = CancellationToken::new();
+            config.disable_allowed_hosts()
         },
     );
 
