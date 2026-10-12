@@ -10,6 +10,7 @@ use serde_json::Value;
 use tokio::runtime::Runtime;
 use tokio::sync::{oneshot, Mutex};
 
+use super::auth::BearerToken;
 use super::registry::Registry;
 use super::server::{
     parse_allow_list, start_mcp_server, AllowList, McpResponse, McpServerInfo, McpServerState,
@@ -54,6 +55,7 @@ impl McpAddIn {
         address: &mut Variant,
         origins: &mut Variant,
         timeout_secs: &mut Variant,
+        token: &mut Variant,
         return_value: &mut Variant,
     ) -> AddinResult {
         if self.server.is_some() {
@@ -64,6 +66,10 @@ impl McpAddIn {
         let addr = address
             .parse()
             .map_err(|err| format!("Некорректный адрес: {err}"))?;
+
+        let token = token.get_string()?;
+        let auth_token = BearerToken::new(token.as_str())
+            .map_err(|err| format!("Некорректный токен авторизации MCP: {err}"))?;
 
         let origins = origins.get_string()?;
         let allow_list = parse_allow_list(origins.as_str())?;
@@ -97,6 +103,7 @@ impl McpAddIn {
             self.server_info.clone(),
             self.subscriptions.clone(),
             self.tasks.clone(),
+            Some(auth_token),
         )?;
 
         self.server = Some(server);
@@ -604,7 +611,7 @@ impl SimpleAddin for McpAddIn {
         &[
             MethodInfo {
                 name: name!("Запустить"),
-                method: Methods::Method3(Self::mcp_start),
+                method: Methods::Method4(Self::mcp_start),
             },
             MethodInfo {
                 name: name!("Остановить"),
