@@ -368,9 +368,9 @@ struct AllowListService<S> {
     allow_list: Arc<RwLock<AllowList>>,
 }
 
-type BoxResponse = Response<BoxBody<Bytes, Infallible>>;
+pub(super) type BoxResponse = Response<BoxBody<Bytes, Infallible>>;
 
-type BoxFutureResponse = BoxFuture<'static, Result<BoxResponse, Infallible>>;
+pub(super) type BoxFutureResponse = BoxFuture<'static, Result<BoxResponse, Infallible>>;
 
 impl<S, B> Service<Request<B>> for AllowListService<S>
 where
@@ -486,10 +486,10 @@ where
             let bytes = match axum::body::to_bytes(body, 4096).await {
                 Ok(b) => b,
                 Err(_) => {
-                    return Response::builder()
+                    return Ok(Response::builder()
                         .status(StatusCode::BAD_REQUEST)
                         .body(Full::new(Bytes::new()).boxed())
-                        .expect("valid response");
+                        .expect("valid response"));
                 }
             };
             let is_initialized = serde_json::from_slice::<serde_json::Value>(&bytes)
@@ -502,10 +502,10 @@ where
                 .map(|m| m == "notifications/initialized")
                 .unwrap_or(false);
             if is_initialized {
-                return Response::builder()
+                return Ok(Response::builder()
                     .status(StatusCode::ACCEPTED)
                     .body(Full::new(Bytes::new()).boxed())
-                    .expect("valid response");
+                    .expect("valid response"));
             }
             let req = Request::from_parts(parts, Body::from(bytes));
             inner.call(req).await
