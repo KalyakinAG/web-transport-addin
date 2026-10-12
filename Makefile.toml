@@ -88,15 +88,22 @@ args = ["build", "--release", "--target", "x86_64-unknown-linux-gnu"]
 
 [tasks.build-release-macos-64.linux]
 script = '''
+# cargo-zigbuild 0.23.4 + Zig 0.16 breaks cdylib links on Apple targets
+# (rust-cross/cargo-zigbuild#479, fix not yet released). Pin Zig 0.15.2.
+ZIG_VERSION=0.15.2
+curl -L "https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz" -o /tmp/zig.tar.xz
+mkdir -p /tmp/zig-host
+tar -J -x -C /tmp/zig-host -f /tmp/zig.tar.xz
 docker run --rm \
   --user "$(id -u):$(id -g)" \
   -e HOME=/tmp \
   -e CARGO_HOME=/tmp/cargo \
   -e CARGO_ZIGBUILD_CACHE_DIR=/tmp/cargo-zigbuild \
+  -v "/tmp/zig-host/zig-x86_64-linux-${ZIG_VERSION}:/tmp/zig:ro" \
   -v "${CARGO_MAKE_WORKING_DIRECTORY}:/io" \
   -w /io \
   ghcr.io/rust-cross/cargo-zigbuild \
-  cargo zigbuild --release --target x86_64-apple-darwin
+  bash -c 'export PATH=/tmp/zig:$PATH; zig version; cargo zigbuild --release --target x86_64-apple-darwin'
 '''
 
 [tasks.build-release-macos-64.mac]

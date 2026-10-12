@@ -999,7 +999,7 @@ impl McpBridgeHandler {
 }
 
 fn peer_id(peer: &ClientSink) -> Option<usize> {
-    peer.peer_info().map(|info| info as *const _ as usize)
+    peer.peer_info().map(|info| Arc::as_ptr(&info) as usize)
 }
 
 impl ServerHandler for McpBridgeHandler {
